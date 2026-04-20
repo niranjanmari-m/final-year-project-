@@ -1,0 +1,96 @@
+{
+  "entities": {
+    "RSVP": {
+      "title": "RSVP",
+      "description": "Guest RSVP details extracted from natural language.",
+      "type": "object",
+      "properties": {
+        "guestName": {
+          "type": "string",
+          "description": "The name of the guest."
+        },
+        "guestCount": {
+          "type": "number",
+          "description": "Number of people attending."
+        },
+        "foodPreference": {
+          "type": "string",
+          "enum": ["Vegetarian", "Non-Vegetarian", "Not Specified"],
+          "description": "Food preference."
+        },
+        "additionalDetails": {
+          "type": "string",
+          "description": "Other dietary needs or special requests."
+        },
+        "originalMessage": {
+          "type": "string",
+          "description": "The original message from the guest."
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time",
+          "description": "When the RSVP was submitted."
+        }
+      },
+      "required": ["guestName", "guestCount", "foodPreference", "additionalDetails", "timestamp"]
+    },
+    "GuestMessage": {
+      "title": "Guest Message",
+      "description": "A message left by a guest on the wedding wall, moderated and beautified by AI.",
+      "type": "object",
+      "properties": {
+        "author": {
+          "type": "string",
+          "description": "The name of the guest who left the message."
+        },
+        "text": {
+          "type": "string",
+          "description": "The beautified text of the message."
+        },
+        "title": {
+          "type": "string",
+          "description": "A short summary title for the message."
+        },
+        "rating": {
+          "type": "number",
+          "description": "A rating from 1 to 5 hearts."
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time",
+          "description": "When the message was posted."
+        }
+      },
+      "required": ["author", "text", "title", "rating", "timestamp"]
+    },
+    "WeddingSettings": {
+      "title": "Wedding Settings",
+      "description": "Global settings for the wedding invitation app.",
+      "type": "object",
+      "properties": {
+        "config": {
+          "type": "object",
+          "description": "The full WeddingData object."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    }
+  },
+  "firestore": {
+    "/rsvps/{rsvpId}": {
+      "schema": "RSVP",
+      "description": "Collection of guest RSVPs."
+    },
+    "/messages/{messageId}": {
+      "schema": "GuestMessage",
+      "description": "Collection of guest messages for the wall."
+    },
+    "/settings/{settingId}": {
+      "schema": "WeddingSettings",
+      "description": "Global application configuration."
+    }
+  }
+}

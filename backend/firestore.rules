@@ -1,0 +1,96 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isEmailVerified() {
+      return isSignedIn() && request.auth.token.get('email_verified', false) == true;
+    }
+
+    // Secure Admin Check
+    function isAdmin() {
+      return isEmailVerified() && (
+        request.auth.token.email == "niranjanmmari@gmail.com" ||
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+      );
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    // ===============================================================
+    // Validation Blueprints
+    // ===============================================================
+
+    function isValidRSVP(data) {
+      return data.guestName is string && data.guestName.size() > 0 && data.guestName.size() < 100 &&
+             data.guestCount is number && data.guestCount >= 0 && data.guestCount < 100 &&
+             data.foodPreference in ["Vegetarian", "Non-Vegetarian", "Not Specified"] &&
+             data.additionalDetails is string && data.additionalDetails.size() < 1000 &&
+             data.timestamp == request.time;
+    }
+
+    function isValidMessage(data) {
+      return data.author is string && data.author.size() > 0 && data.author.size() < 100 &&
+             data.text is string && data.text.size() > 0 && data.text.size() < 2000 &&
+             data.title is string && data.title.size() < 200 &&
+             data.rating is number && data.rating >= 1 && data.rating <= 5 &&
+             data.timestamp == request.time;
+    }
+
+    // ===============================================================
+    // Collection Rules
+    // ===============================================================
+
+    match /rsvps/{rsvpId} {
+      // Allow anyone to submit an RSVP (Public Event)
+      // We validate the schema strictly to prevent abuse
+      allow create: if isValidRSVP(incoming());
+      
+      // Only admins can see and manage the list of guest RSVPs
+      allow read, update, delete: if isAdmin();
+    }
+
+    match /messages/{messageId} {
+      // Anyone can post a message to the wall
+      allow create: if isValidMessage(incoming());
+      
+      // Public wall - everyone can read the beautiful messages
+      allow get, list: if true;
+      
+      // Only admins can delete or update messages
+      allow update, delete: if isAdmin();
+    }
+
+    match /settings/{settingId} {
+      // Public can read settings to see the wedding details
+      allow get, list: if true;
+      // Only admins can update the wedding details
+      allow write: if isAdmin();
+    }
+
+    match /admins/{adminId} {
+      // Bootstrapped admin list
+      allow read: if isSignedIn();
+    }
+
+    // ===============================================================
+    // Global Safety Net
+    // ===============================================================
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
